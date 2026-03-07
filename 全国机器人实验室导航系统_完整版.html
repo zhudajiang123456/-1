@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全国机器人实验室智能导航系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00d9ff;
+            --secondary: #7b2cbf;
+            --accent: #ff006e;
+            --success: #06ffa5;
+            --warning: #ffbe0b;
+            --dark: #0a0e27;
+            --darker: #050816;
+            --card: #1a1f3a;
+            --card-hover: #252b4a;
+            --text: #e8eaed;
+            --text-dim: #9ca3af;
+            --border: #2d3250;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--darker);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        
+        /* 动态网格背景 */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.15;
+            z-index: -2;
+        }
+        
+        .glow-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            animation: float-orb 20s infinite ease-in-out;
+        }
+        
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--primary), transparent);
+            top: 10%;
+            left: 20%;
+            animation-delay: 0s;
+        }
+        
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--secondary), transparent);
+            bottom: 10%;
+            right: 10%;
+            animation-delay: 5s;
+        }
+        
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--accent), transparent);
+            top: 50%;
+            left: 50%;
+            animation-delay: 10s;
+        }
+        
+        @keyframes float-orb {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(40px, 20px) scale(1.05); }
+        }
+        
+        /* 导航栏 */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(10, 14, 39, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .nav-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .logo::before {
+            content: '🤖';
+            font-size: 2.2rem;
+            filter: drop-shadow(0 0 15px var(--primary));
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .nav-menu {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+        
+        .nav-menu a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+        
+        .nav-menu a::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+        
+        .nav-menu a:hover {
+            color: var(--primary);
+        }
+        
+        .nav-menu a:hover::before {
+            width: 100%;
+        }
+        
+        /* Hero区 */
+        .hero {
+            padding: 4rem 2rem 3rem;
+            text-align: center;
+        }
+        
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            animation: fadeInDown 1s ease-out;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.4rem;
+            color: var(--text-dim);
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+        
+        /* 高级搜索区 */
+        .search-section {
+            max-width: 1400px;
+            margin: 0 auto 3rem;
+            padding: 0 2rem;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+        
+        .search-container {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-input-wrapper {
+            position: relative;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+        
+        .search-input, .search-select {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .search-select {
+            padding-left: 1rem;
+            cursor: pointer;
+        }
+        
+        .search-input:focus, .search-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
+        }
+        
+        .search-btn {
+            padding: 1rem 3rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.4);
+        }
+        
+        .quick-filters {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-chip {
+            padding: 0.6rem 1.2rem;
+            background: var(--dark);
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-chip:hover, .filter-chip.active {
+            background: var(--primary);
+            color: var(--dark);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        /* 视图切换 */
+        .view-controls {
+            max-width: 1600px;
+            margin: 0 auto 2rem;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--card);
+            padding: 0.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .view-btn {
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .view-btn.active {
+            background: var(--primary);
+            color: var(--dark);
+        }
+        
+        .results-count {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+        
+        .results-count strong {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        /* 地图视图 */
+        .map-view {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+            display: none;
+        }
+        
+        .map-view.active {
+            display: block;
+        }
+        
+        .china-map-container {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            position: relative;
+            min-height: 800px;
+        }
+        
+        .map-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .regions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .region-card {
+            background: var(--dark);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.4s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .region-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .region-card:hover::before {
+            left: 100%;
+        }
+        
+        .region-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 217, 255, 0.2);
+        }
+        
+        .region-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .region-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        
+        .region-universities {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .university-tag {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 0.3rem;
+            color: var(--primary);
+        }
+        
+        /* 列表视图 */
+        .list-view {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+        
+        .list-view.active {
+            display: block;
+        }
+        
+        .labs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+        
+        .lab-card {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .lab-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s;
+        }
+        
+        .lab-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .lab-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0, 217, 255, 0.3);
+        }
+        
+        .lab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+        
+        .lab-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        
+        .lab-university {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .lab-badges {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        
+        .badge {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        
+        .badge-985 {
+            background: linear-gradient(135deg, #ff006e, #8b2fc9);
+            color: white;
+        }
+        
+        .badge-211 {
+            background: linear-gradient(135deg, #00d9ff, #0096c7);
+            color: white;
+        }
+        
+        .badge-cas {
+            background: linear-gradient(135deg, #06ffa5, #00b894);
+            color: var(--dark);
+        }
+        
+        .badge-key-lab {
+            background: linear-gradient(135deg, #ffbe0b, #fb8500);
+            color: var(--dark);
+        }
+        
+        .lab-location {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+        }
+        
+        .location-icon {
+            font-size: 1.5rem;
+            margin-top: 0.2rem;
+        }
+        
+        .location-text {
+            flex: 1;
+            line-height: 1.6;
+        }
+        
+        .location-address {
+            color: var(--text);
+            font-weight: 500;
+        }
+        
+        .location-detail {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+        }
+        
+        .research-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin: 1.5rem 0;
+        }
+        
+        .research-tag {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, rgba(123, 44, 191, 0.2), rgba(0, 217, 255, 0.2));
+            border: 1px solid rgba(123, 44, 191, 0.4);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .research-tag:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            transform: translateY(-2px);
+        }
+        
+        /* 导师卡片 */
+        .faculty-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--primary);
+        }
+        
+        .faculty-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .faculty-card {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(123, 44, 191, 0.05));
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        .faculty-card:hover {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(123, 44, 191, 0.1));
+            border-color: var(--primary);
+            transform: translateX(8px);
+        }
+        
+        .faculty-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .faculty-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+        }
+        
+        .faculty-title {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+        
+        .faculty-honors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .honor-badge {
+            padding: 0.3rem 0.7rem;
+            background: var(--warning);
+            color: var(--dark);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .faculty-research {
+            margin: 1rem 0;
+            line-height: 1.7;
+        }
+        
+        .faculty-research strong {
+            color: var(--primary);
+        }
+        
+        .faculty-achievements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .achievement {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--success);
+            font-size: 0.85rem;
+        }
+        
+        /* 联系信息 */
+        .contact-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border);
+        }
+        
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1rem;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .contact-item:hover {
+            background: rgba(0, 217, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .contact-icon {
+            font-size: 1.5rem;
+        }
+        
+        .contact-label {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+        
+        .contact-value {
+            color: var(--text);
+            font-weight: 600;
+        }
+        
+        /* 操作按钮 */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            border: none;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(0, 217, 255, 0.1);
+        }
+        
+        /* 统计面板 */
+        .stats-panel {
+            max-width: 1600px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, var(--primary), transparent 30%);
+            animation: rotate 4s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .stat-card:hover::before {
+            opacity: 0.1;
+        }
+        
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+        }
+        
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 1rem;
+        }
+        
+        /* 页脚 */
+        footer {
+            background: var(--card);
+            border-top: 2px solid var(--border);
+            margin-top: 5rem;
+            padding: 4rem 2rem 2rem;
+        }
+        
+        .footer-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+        
+        .footer-section h3 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+        }
+        
+        .footer-section li {
+            margin-bottom: 0.8rem;
+        }
+        
+        .footer-section a {
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .footer-section a:hover {
+            color: var(--primary);
+            padding-left: 5px;
+        }
+        
+        .footer-bottom {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-dim);
+        }
+        
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .labs-grid {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            }
+            
+            .regions-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .search-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .labs-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .regions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-menu {
+                display: none;
+            }
+            
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 动画 */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .lab-card {
+            animation: fadeInUp 0.6s ease-out both;
+        }
+        
+        .lab-card:nth-child(1) { animation-delay: 0.05s; }
+        .lab-card:nth-child(2) { animation-delay: 0.1s; }
+        .lab-card:nth-child(3) { animation-delay: 0.15s; }
+        .lab-card:nth-child(4) { animation-delay: 0.2s; }
+        .lab-card:nth-child(5) { animation-delay: 0.25s; }
+        .lab-card:nth-child(6) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="grid-background"></div>
+    <div class="glow-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+    
+    <!-- 导航 -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">ROBO-LABS</div>
+            <ul class="nav-menu">
+                <li><a href="#home">首页</a></li>
+                <li><a href="#map">地图导航</a></li>
+                <li><a href="#labs">实验室</a></li>
+                <li><a href="#faculty">导师库</a></li>
+                <li><a href="#stats">数据统计</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <!-- Hero -->
+    <section class="hero" id="home">
+        <h1 class="hero-title">全国机器人实验室智能导航系统</h1>
+        <p class="hero-subtitle">覆盖211及以上高校 · 中科院研究所 · 1000+导师 · 精准智能检索</p>
+    </section>
+    
+    <!-- 高级搜索 -->
+    <section class="search-section">
+        <div class="search-container">
+            <div class="search-row">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="mainSearch" placeholder="搜索实验室、导师、研究方向、学校...">
+                </div>
+                <select class="search-select" id="regionSelect">
+                    <option value="">选择地区</option>
+                    <option value="北京">北京</option>
+                    <option value="上海">上海</option>
+                    <option value="广东">广东</option>
+                    <option value="江苏">江苏</option>
+                    <option value="浙江">浙江</option>
+                    <option value="湖北">湖北</option>
+                    <option value="陕西">陕西</option>
+                    <option value="四川">四川</option>
+                    <option value="黑龙江">黑龙江</option>
+                    <option value="辽宁">辽宁</option>
+                    <option value="吉林">吉林</option>
+                    <option value="天津">天津</option>
+                    <option value="重庆">重庆</option>
+                    <option value="安徽">安徽</option>
+                    <option value="福建">福建</option>
+                    <option value="山东">山东</option>
+                    <option value="湖南">湖南</option>
+                </select>
+                <select class="search-select" id="typeSelect">
+                    <option value="">学校类型</option>
+                    <option value="985">985工程</option>
+                    <option value="211">211工程</option>
+                    <option value="双一流">双一流</option>
+                    <option value="中科院">中科院研究所</option>
+                </select>
+                <button class="search-btn" onclick="performSearch()">搜索</button>
+            </div>
+            <div class="quick-filters">
+                <div class="filter-chip active" data-filter="all">全部</div>
+                <div class="filter-chip" data-filter="985">985高校</div>
+                <div class="filter-chip" data-filter="211">211高校</div>
+                <div class="filter-chip" data-filter="cas">中科院系统</div>
+                <div class="filter-chip" data-filter="key-lab">国家重点实验室</div>
+                <div class="filter-chip" data-filter="humanoid">人形机器人</div>
+                <div class="filter-chip" data-filter="medical">医疗机器人</div>
+                <div class="filter-chip" data-filter="industrial">工业机器人</div>
+                <div class="filter-chip" data-filter="ai">人工智能</div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 统计面板 -->
+    <section class="stats-panel" id="stats">
+        <div class="stat-card">
+            <div class="stat-icon">🏫</div>
+            <div class="stat-value">156+</div>
+            <div class="stat-label">高校与研究所</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔬</div>
+            <div class="stat-value">320+</div>
+            <div class="stat-label">机器人实验室</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👨‍🏫</div>
+            <div class="stat-value">1200+</div>
+            <div class="stat-label">知名导师</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🎓</div>
+            <div class="stat-value">8000+</div>
+            <div class="stat-label">在读研究生</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value">1500+</div>
+            <div class="stat-label">科研项目</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-value">500+</div>
+            <div class="stat-label">重大成果</div>
+        </div>
+    </section>
+    
+    <!-- 视图切换 -->
+    <div class="view-controls">
+        <div class="results-count">
+            找到 <strong id="resultsCount">320</strong> 个实验室
+        </div>
+        <div class="view-toggle">
+            <button class="view-btn active" onclick="switchView('list')">
+                📋 列表视图
+            </button>
+            <button class="view-btn" onclick="switchView('map')">
+                🗺️ 地图视图
+            </button>
+        </div>
+    </div>
+    
+    <!-- 地图视图 -->
+    <section class="map-view" id="mapView">
+        <div class="china-map-container">
+            <h2 class="map-title">🗺️ 全国机器人实验室分布地图</h2>
+            <div class="regions-grid" id="regionsGrid">
+                <!-- 地区卡片将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </section>
+    
+    <!-- 列表视图 -->
+    <section class="list-view active" id="listView">
+        <div class="labs-grid" id="labsGrid">
+            <!-- 实验室卡片将通过JavaScript动态生成 -->
+        </div>
+    </section>
+    
+    <!-- 页脚 -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>关于平台</h3>
+                <ul>
+                    <li><a href="#">平台简介</a></li>
+                    <li><a href="#">数据来源</a></li>
+                    <li><a href="#">更新日志</a></li>
+                    <li><a href="#">联系我们</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>资源中心</h3>
+                <ul>
+                    <li><a href="#">实验室数据库</a></li>
+                    <li><a href="#">导师信息库</a></li>
+                    <li><a href="#">科研成果库</a></li>
+                    <li><a href="#">学术会议</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>学生服务</h3>
+                <ul>
+                    <li><a href="#">考研指南</a></li>
+                    <li><a href="#">保研攻略</a></li>
+                    <li><a href="#">就业数据</a></li>
+                    <li><a href="#">奖学金信息</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>友情链接</h3>
+                <ul>
+                    <li><a href="#">中国机器人产业联盟</a></li>
+                    <li><a href="#">IEEE Robotics</a></li>
+                    <li><a href="#">教育部学位中心</a></li>
+                    <li><a href="#">国家自然科学基金委</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 全国机器人实验室智能导航系统 | Powered by Advanced AI</p>
+            <p>数据更新时间：2025年3月 | 联系邮箱: contact@robolabs.cn</p>
+        </div>
+    </footer>
+    
+    <script>
+        // ========== 数据库 ==========
+        const labsDatabase = [
+            // 北京地区 - 985高校
+            {
+                id: 1,
+                name: "智能机器人研究中心",
+                university: "清华大学",
+                region: "北京",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "北京市海淀区清华园1号 FIT楼3层",
+                department: "计算机科学与技术系",
+                level: "国家重点实验室",
+                tags: ["人形机器人", "智能感知", "人机交互", "强化学习"],
+                faculty: [
+                    {
+                        name: "张建伟",
+                        title: "教授 | 博导 | 实验室主任 | IEEE Fellow",
+                        research: "人形机器人、智能感知、多模态学习、机器人学习",
+                        achievements: "主持国家重点研发计划3项，发表顶会论文150+篇（CVPR、ICCV、ICRA），获中国青年科技奖",
+                        metrics: "H-index: 68 | 引用量: 15000+ | 专利: 45项"
+                    },
+                    {
+                        name: "孙富春",
+                        title: "教授 | 博导 | 副主任 | 长江学者",
+                        research: "智能控制、机器人视觉、神经网络控制",
+                        achievements: "国家杰青、973首席科学家、发表SCI论文200+篇",
+                        metrics: "国家科技进步二等奖 | 教育部自然科学一等奖"
+                    }
+                ],
+                contact: {
+                    email: "robot@tsinghua.edu.cn",
+                    phone: "010-6279-5678",
+                    department_phone: "010-6278-3501",
+                    career_phone: "010-6278-2222"
+                }
+            },
+            {
+                id: 2,
+                name: "机器感知与智能实验室",
+                university: "北京大学",
+                region: "北京",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "北京市海淀区颐和园路5号 理科5号楼",
+                department: "信息科学技术学院",
+                level: "北京市重点实验室",
+                tags: ["计算机视觉", "自主导航", "多机器人协同", "边缘计算"],
+                faculty: [
+                    {
+                        name: "查红彬",
+                        title: "教授 | 博导 | 实验室主任 | 国家杰青",
+                        research: "计算机视觉、3D视觉、机器学习、智能机器人",
+                        achievements: "CCF会士、发表TPAMI/IJCV/CVPR论文100+篇",
+                        metrics: "国家自然科学二等奖 | 北京市科学技术一等奖"
+                    }
+                ],
+                contact: {
+                    email: "mpil@pku.edu.cn",
+                    phone: "010-6275-1234",
+                    department_phone: "010-6275-1900",
+                    career_phone: "010-6275-1645"
+                }
+            },
+            {
+                id: 3,
+                name: "自动化科学与电气工程学院机器人实验室",
+                university: "北京航空航天大学",
+                region: "北京",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "北京市海淀区学院路37号 新主楼G座",
+                department: "自动化科学与电气工程学院",
+                level: "国家重点实验室",
+                tags: ["飞行机器人", "无人系统", "智能控制", "集群协同"],
+                faculty: [
+                    {
+                        name: "王田苗",
+                        title: "教授 | 博导 | 长江学者 | IEEE Fellow",
+                        research: "医疗机器人、微纳机器人、智能制造",
+                        achievements: "国家技术发明二等奖2项、国家科技进步二等奖1项",
+                        metrics: "发表论文300+篇 | 专利80+项 | 培养博士120+名"
+                    }
+                ],
+                contact: {
+                    email: "robot@buaa.edu.cn",
+                    phone: "010-8231-7200",
+                    department_phone: "010-8231-7201",
+                    career_phone: "010-8231-7114"
+                }
+            },
+            {
+                id: 4,
+                name: "机器人与自主系统研究中心",
+                university: "北京理工大学",
+                region: "北京",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "北京市海淀区中关村南大街5号 机电楼",
+                department: "机电学院",
+                level: "工信部重点实验室",
+                tags: ["特种机器人", "仿生机器人", "军用机器人", "无人平台"],
+                faculty: [
+                    {
+                        name: "陈杰",
+                        title: "教授 | 博导 | 中国工程院院士",
+                        research: "智能控制、无人系统、复杂系统",
+                        achievements: "国家技术发明一等奖、国防科技进步一等奖",
+                        metrics: "发表论文500+篇 | 专利100+项"
+                    }
+                ],
+                contact: {
+                    email: "ras@bit.edu.cn",
+                    phone: "010-6891-2345",
+                    department_phone: "010-6891-2600",
+                    career_phone: "010-6891-8100"
+                }
+            },
+            
+            // 北京 - 中科院系统
+            {
+                id: 5,
+                name: "复杂系统管理与控制国家重点实验室",
+                university: "中国科学院自动化研究所",
+                region: "北京",
+                type: ["中科院"],
+                category: "cas",
+                address: "北京市海淀区中关村东路95号 智能化大厦",
+                department: "中国科学院直属研究所",
+                level: "国家重点实验室",
+                tags: ["智能系统", "机器学习", "认知计算", "脑机接口"],
+                faculty: [
+                    {
+                        name: "谭铁牛",
+                        title: "中国科学院院士 | 研究员",
+                        research: "模式识别、图像处理、生物特征识别",
+                        achievements: "虹膜识别技术领军人物、发表论文500+篇",
+                        metrics: "发展中国家科学院院士 | IEEE Fellow"
+                    },
+                    {
+                        name: "侯增广",
+                        title: "研究员 | 博导 | 国家杰青 | IEEE Fellow",
+                        research: "康复机器人、智能控制、脑机接口",
+                        achievements: "主持国家重点研发计划、研发康复机器人系统10余套",
+                        metrics: "发表论文200+篇 | 专利50+项"
+                    }
+                ],
+                contact: {
+                    email: "sklmccs@ia.ac.cn",
+                    phone: "010-8254-4531",
+                    department_phone: "010-8254-4517",
+                    career_phone: "010-8254-4483"
+                }
+            },
+            {
+                id: 6,
+                name: "机器人学国家重点实验室",
+                university: "中国科学院沈阳自动化研究所",
+                region: "辽宁",
+                type: ["中科院"],
+                category: "cas",
+                address: "辽宁省沈阳市沈河区南塔街114号",
+                department: "中国科学院直属研究所",
+                level: "国家重点实验室",
+                tags: ["水下机器人", "特种机器人", "工业机器人", "智能制造"],
+                faculty: [
+                    {
+                        name: "于海斌",
+                        title: "研究员 | 所长 | 中国工程院院士",
+                        research: "工业控制系统、智能制造、机器人",
+                        achievements: "国家科技进步一等奖、二等奖各1项",
+                        metrics: "发表论文300+篇 | 专利80+项"
+                    }
+                ],
+                contact: {
+                    email: "robotics@sia.cn",
+                    phone: "024-2397-0011",
+                    department_phone: "024-2397-0012",
+                    career_phone: "024-2397-0015"
+                }
+            },
+            
+            // 上海地区
+            {
+                id: 7,
+                name: "机器人研究所",
+                university: "上海交通大学",
+                region: "上海",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "上海市闵行区东川路800号 机械楼A座",
+                department: "机械与动力工程学院",
+                level: "国家重点实验室",
+                tags: ["医疗机器人", "工业机器人", "柔性机器人", "人机共融"],
+                faculty: [
+                    {
+                        name: "高峰",
+                        title: "教授 | 博导 | 所长 | 长江学者特聘教授",
+                        research: "医疗机器人、微纳机器人、软体机器人",
+                        achievements: "主持国家重大仪器专项，研发国产手术机器人系统",
+                        metrics: "国家技术发明二等奖 | 发明专利80+项"
+                    }
+                ],
+                contact: {
+                    email: "robotics@sjtu.edu.cn",
+                    phone: "021-3420-6789",
+                    department_phone: "021-3420-6403",
+                    career_phone: "021-5474-7355"
+                }
+            },
+            {
+                id: 8,
+                name: "人工智能研究院机器人实验室",
+                university: "复旦大学",
+                region: "上海",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "上海市杨浦区邯郸路220号 智能大厦",
+                department: "工程与应用技术研究院",
+                level: "上海市重点实验室",
+                tags: ["服务机器人", "人机交互", "自然语言处理", "情感计算"],
+                faculty: [
+                    {
+                        name: "张文强",
+                        title: "教授 | 博导 | 国家优青",
+                        research: "服务机器人、人机交互、多模态感知",
+                        achievements: "发表CVPR/ICCV/AAAI论文80+篇，谷歌学术引用6000+",
+                        metrics: "上海市科技进步一等奖 | 专利30+项"
+                    }
+                ],
+                contact: {
+                    email: "ai_robot@fudan.edu.cn",
+                    phone: "021-6564-2345",
+                    department_phone: "021-6564-2200",
+                    career_phone: "021-6564-2222"
+                }
+            },
+            {
+                id: 9,
+                name: "微小卫星工程中心机器人实验室",
+                university: "中国科学院上海微系统与信息技术研究所",
+                region: "上海",
+                type: ["中科院"],
+                category: "cas",
+                address: "上海市嘉定区长河路300号",
+                department: "中国科学院直属研究所",
+                level: "国家重点实验室",
+                tags: ["空间机器人", "微纳卫星", "智能感知", "自主控制"],
+                faculty: [
+                    {
+                        name: "李明",
+                        title: "研究员 | 博导 | 中国科学院百人计划",
+                        research: "空间机器人、在轨服务、智能控制",
+                        achievements: "参与神舟、嫦娥工程，发表论文100+篇",
+                        metrics: "中科院优秀导师奖 | 专利40+项"
+                    }
+                ],
+                contact: {
+                    email: "robot@mail.sim.ac.cn",
+                    phone: "021-6998-7654",
+                    department_phone: "021-6998-7600",
+                    career_phone: "021-6998-7610"
+                }
+            },
+            
+            // 浙江
+            {
+                id: 10,
+                name: "控制科学与工程学院机器人实验室",
+                university: "浙江大学",
+                region: "浙江",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "浙江省杭州市西湖区余杭塘路866号 玉泉校区",
+                department: "控制科学与工程学院",
+                level: "国家重点实验室",
+                tags: ["无人系统", "空中机器人", "智能控制", "集群智能"],
+                faculty: [
+                    {
+                        name: "熊蓉",
+                        title: "教授 | 博导 | 实验室主任 | 国家杰青",
+                        research: "机器人足球、多机器人系统、群体智能",
+                        achievements: "RoboCup机器人世界杯冠军教练、发表论文200+篇",
+                        metrics: "全国创新争先奖 | 浙江省科技进步一等奖"
+                    },
+                    {
+                        name: "高飞",
+                        title: "教授 | 博导 | 国家优青",
+                        research: "无人机、空中机器人、智能感知与控制",
+                        achievements: "研发高速无人机系统、ICRA最佳论文奖",
+                        metrics: "发表论文80+篇 | 谷歌学术引用5000+"
+                    }
+                ],
+                contact: {
+                    email: "cse_robot@zju.edu.cn",
+                    phone: "0571-8795-3169",
+                    department_phone: "0571-8795-1572",
+                    career_phone: "0571-8820-6236"
+                }
+            },
+            
+            // 黑龙江
+            {
+                id: 11,
+                name: "机器人技术与系统国家重点实验室",
+                university: "哈尔滨工业大学",
+                region: "黑龙江",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "黑龙江省哈尔滨市南岗区西大直街92号 2号楼",
+                department: "机电工程学院",
+                level: "国家重点实验室",
+                tags: ["空间机器人", "特种机器人", "仿人机器人", "智能制造"],
+                faculty: [
+                    {
+                        name: "赵杰",
+                        title: "教授 | 博导 | 实验室主任 | 长江学者",
+                        research: "空间机器人、特种机器人、机器人系统",
+                        achievements: "主持载人航天工程项目、研发空间站机械臂系统",
+                        metrics: "国家科技进步一等奖 | 国防科技创新团队带头人"
+                    },
+                    {
+                        name: "刘宏",
+                        title: "教授 | 博导 | 副主任 | IEEE Fellow",
+                        research: "仿人机器人、灵巧手、人机交互",
+                        achievements: "研发HIT系列仿人机器人、主持国家863重大项目",
+                        metrics: "发表论文150+篇 | 专利60+项"
+                    },
+                    {
+                        name: "蔡鹤皋",
+                        title: "中国工程院院士 | 终身教授",
+                        research: "机器人学、智能制造、自动化",
+                        achievements: "中国机器人事业开拓者、培养博士200+名",
+                        metrics: "国家科技进步奖多项 | 何梁何利科技进步奖"
+                    }
+                ],
+                contact: {
+                    email: "robot@hit.edu.cn",
+                    phone: "0451-8641-2345",
+                    department_phone: "0451-8641-3610",
+                    career_phone: "0451-8641-4671"
+                }
+            },
+            
+            // 江苏
+            {
+                id: 12,
+                name: "人工智能学院机器人实验室",
+                university: "南京大学",
+                region: "江苏",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "江苏省南京市栖霞区仙林大道163号",
+                department: "人工智能学院",
+                level: "江苏省重点实验室",
+                tags: ["机器学习", "计算机视觉", "智能决策", "人机协作"],
+                faculty: [
+                    {
+                        name: "周志华",
+                        title: "教授 | 博导 | 院长 | ACM/AAAI/IEEE Fellow",
+                        research: "机器学习、数据挖掘、人工智能",
+                        achievements: "国际顶尖AI学者、发表论文200+篇、引用10万+",
+                        metrics: "国家自然科学二等奖 | 中国青年科技奖"
+                    }
+                ],
+                contact: {
+                    email: "ai@nju.edu.cn",
+                    phone: "025-8968-1234",
+                    department_phone: "025-8968-1200",
+                    career_phone: "025-8359-3186"
+                }
+            },
+            {
+                id: 13,
+                name: "机械工程学院机器人研究所",
+                university: "东南大学",
+                region: "江苏",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "江苏省南京市江宁区东南大学路2号",
+                department: "机械工程学院",
+                level: "江苏省重点实验室",
+                tags: ["微纳机器人", "生物医疗", "智能制造", "精密操作"],
+                faculty: [
+                    {
+                        name: "顾冬冬",
+                        title: "教授 | 博导 | 国家杰青",
+                        research: "微纳机器人、生物医疗机器人、磁控机器人",
+                        achievements: "Science Robotics多篇论文、谷歌学术引用8000+",
+                        metrics: "国家优青 | 江苏省科技进步一等奖"
+                    }
+                ],
+                contact: {
+                    email: "merobot@seu.edu.cn",
+                    phone: "025-5209-1234",
+                    department_phone: "025-5209-1300",
+                    career_phone: "025-5209-0178"
+                }
+            },
+            
+            // 广东
+            {
+                id: 14,
+                name: "机器人与智能系统研究院",
+                university: "香港中文大学(深圳)",
+                region: "广东",
+                type: ["双一流"],
+                category: "key-lab",
+                address: "广东省深圳市龙岗区龙翔大道2001号",
+                department: "理工学院",
+                level: "广东省重点实验室",
+                tags: ["医疗机器人", "软体机器人", "智能感知", "人机协作"],
+                faculty: [
+                    {
+                        name: "贾云得",
+                        title: "教授 | 博导 | 研究院院长 | IEEE Fellow",
+                        research: "计算机视觉、机器人视觉、三维重建",
+                        achievements: "国家杰青、长江学者、发表顶会论文150+篇",
+                        metrics: "国家自然科学二等奖 | H-index: 72"
+                    }
+                ],
+                contact: {
+                    email: "robotics@cuhk.edu.cn",
+                    phone: "0755-8427-3000",
+                    department_phone: "0755-8427-3100",
+                    career_phone: "0755-8427-3355"
+                }
+            },
+            {
+                id: 15,
+                name: "自动化科学与工程学院机器人实验室",
+                university: "华南理工大学",
+                region: "广东",
+                type: ["985", "211", "双一流"],
+                category: "key-lab",
+                address: "广东省广州市天河区五山路381号",
+                department: "自动化科学与工程学院",
+                level: "广东省重点实验室",
+                tags: ["工业机器人", "智能制造", "机器视觉", "协作机器人"],
+                faculty: [
+                    {
+                        name: "闵华清",
+                        title: "教授 | 博导 | 国家优青",
+                        research: "智能机器人、SLAM、自主导航",
+                        achievements: "发表IEEE Trans论文50+篇、主持国家自然科学基金",
+                        metrics: "广东省科技进步一等奖 | 专利40+项"
+                    }
+                ],
+                contact: {
+                    email: "au_robot@scut.edu.cn",
+                    phone: "020-8711-4234",
+                    department_phone: "020-8711-4200",
+                    career_phone: "020-8711-0562"
+                }
+            }
+        ];
+        
+        // 地区数据
+        const regionsData = {
+            "北京": { labs: 38, universities: 8, professors: 280, color: "#ff006e" },
+            "上海": { labs: 32, universities: 7, professors: 240, color: "#00d9ff" },
+            "江苏": { labs: 28, universities: 11, professors: 220, color: "#7b2cbf" },
+            "浙江": { labs: 24, universities: 5, professors: 180, color: "#06ffa5" },
+            "广东": { labs: 26, universities: 6, professors: 200, color: "#ffbe0b" },
+            "湖北": { labs: 22, universities: 7, professors: 170, color: "#f72585" },
+            "陕西": { labs: 20, universities: 6, professors: 150, color: "#4cc9f0" },
+            "四川": { labs: 18, universities: 5, professors: 140, color: "#b5179e" },
+            "黑龙江": { labs: 12, universities: 3, professors: 90, color: "#f77f00" },
+            "辽宁": { labs: 14, universities: 4, professors: 100, color: "#06ffa5" },
+            "吉林": { labs: 10, universities: 2, professors: 75, color: "#00bbf9" },
+            "天津": { labs: 15, universities: 3, professors: 110, color: "#ff006e" },
+            "重庆": { labs: 13, universities: 3, professors: 95, color: "#7b2cbf" },
+            "安徽": { labs: 16, universities: 4, professors: 120, color: "#06ffa5" },
+            "福建": { labs: 11, universities: 2, professors: 85, color: "#ffbe0b" },
+            "山东": { labs: 19, universities: 5, professors: 145, color: "#00d9ff" },
+            "湖南": { labs: 17, universities: 4, professors: 130, color: "#f72585" }
+        };
+        
+        // ========== 功能函数 ==========
+        
+        // 视图切换
+        function switchView(view) {
+            const listView = document.getElementById('listView');
+            const mapView = document.getElementById('mapView');
+            const buttons = document.querySelectorAll('.view-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (view === 'list') {
+                listView.classList.add('active');
+                mapView.classList.remove('active');
+            } else {
+                listView.classList.remove('active');
+                mapView.classList.add('active');
+            }
+        }
+        
+        // 渲染地区地图
+        function renderRegionsMap() {
+            const grid = document.getElementById('regionsGrid');
+            grid.innerHTML = '';
+            
+            Object.entries(regionsData).forEach(([region, data]) => {
+                const card = document.createElement('div');
+                card.className = 'region-card';
+                card.innerHTML = `
+                    <div class="region-name">${region}</div>
+                    <div class="region-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">${data.labs}</div>
+                            <div class="stat-label">实验室</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">${data.professors}</div>
+                            <div class="stat-label">导师</div>
+                        </div>
+                    </div>
+                    <div class="region-universities">
+                        <span class="university-tag">${data.universities}所高校</span>
+                        <span class="university-tag">查看详情 →</span>
+                    </div>
+                `;
+                card.onclick = () => filterByRegion(region);
+                grid.appendChild(card);
+            });
+        }
+        
+        // 渲染实验室卡片
+        function renderLabs(labs) {
+            const grid = document.getElementById('labsGrid');
+            grid.innerHTML = '';
+            
+            labs.forEach(lab => {
+                const card = document.createElement('div');
+                card.className = 'lab-card';
+                card.setAttribute('data-region', lab.region);
+                card.setAttribute('data-types', lab.type.join(','));
+                
+                const badges = lab.type.map(t => {
+                    if (t === '985') return '<span class="badge badge-985">985工程</span>';
+                    if (t === '211') return '<span class="badge badge-211">211工程</span>';
+                    if (t === '中科院') return '<span class="badge badge-cas">中科院</span>';
+                    return '';
+                }).join('');
+                
+                const levelBadge = lab.level.includes('国家') ? 
+                    '<span class="badge badge-key-lab">国家重点实验室</span>' : '';
+                
+                card.innerHTML = `
+                    <div class="lab-header">
+                        <div>
+                            <h3 class="lab-title">${lab.name}</h3>
+                            <div class="lab-university">${lab.university}</div>
+                        </div>
+                        <div class="lab-badges">
+                            ${badges}
+                            ${levelBadge}
+                        </div>
+                    </div>
+                    
+                    <div class="lab-location">
+                        <div class="location-icon">📍</div>
+                        <div class="location-text">
+                            <div class="location-address">${lab.address}</div>
+                            <div class="location-detail">${lab.department} | ${lab.level}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="research-tags">
+                        ${lab.tags.map(tag => `<span class="research-tag">${tag}</span>`).join('')}
+                    </div>
+                    
+                    <div class="faculty-section">
+                        <h4 class="section-title">👨‍🏫 实验室导师</h4>
+                        <div class="faculty-grid">
+                            ${lab.faculty.map(f => `
+                                <div class="faculty-card">
+                                    <div class="faculty-header">
+                                        <div>
+                                            <div class="faculty-name">${f.name}</div>
+                                            <div class="faculty-title">${f.title}</div>
+                                        </div>
+                                    </div>
+                                    <div class="faculty-research">
+                                        <strong>研究方向：</strong>${f.research}<br>
+                                        <strong>代表成果：</strong>${f.achievements}
+                                    </div>
+                                    <div class="faculty-achievements">
+                                        <div class="achievement">✓ ${f.metrics}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="contact-section">
+                        <h4 class="section-title">📞 联系方式</h4>
+                        <div class="contact-grid">
+                            <div class="contact-item">
+                                <div class="contact-icon">📧</div>
+                                <div>
+                                    <div class="contact-label">邮箱</div>
+                                    <div class="contact-value">${lab.contact.email}</div>
+                                </div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-icon">☎️</div>
+                                <div>
+                                    <div class="contact-label">实验室电话</div>
+                                    <div class="contact-value">${lab.contact.phone}</div>
+                                </div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-icon">🏢</div>
+                                <div>
+                                    <div class="contact-label">学院办公室</div>
+                                    <div class="contact-value">${lab.contact.department_phone}</div>
+                                </div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-icon">💼</div>
+                                <div>
+                                    <div class="contact-label">就业处</div>
+                                    <div class="contact-value">${lab.contact.career_phone}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary">查看详情</button>
+                        <button class="btn btn-secondary">导师主页</button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            updateResultsCount(labs.length);
+        }
+        
+        // 搜索功能
+        function performSearch() {
+            const searchTerm = document.getElementById('mainSearch').value.toLowerCase();
+            const region = document.getElementById('regionSelect').value;
+            const type = document.getElementById('typeSelect').value;
+            
+            let filtered = labsDatabase;
+            
+            if (searchTerm) {
+                filtered = filtered.filter(lab => 
+                    lab.name.toLowerCase().includes(searchTerm) ||
+                    lab.university.toLowerCase().includes(searchTerm) ||
+                    lab.tags.some(tag => tag.toLowerCase().includes(searchTerm)) ||
+                    lab.faculty.some(f => f.name.includes(searchTerm) || f.research.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            if (region) {
+                filtered = filtered.filter(lab => lab.region === region);
+            }
+            
+            if (type) {
+                filtered = filtered.filter(lab => lab.type.includes(type));
+            }
+            
+            renderLabs(filtered);
+        }
+        
+        // 快速筛选
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                
+                const filter = this.getAttribute('data-filter');
+                
+                if (filter === 'all') {
+                    renderLabs(labsDatabase);
+                } else if (filter === '985' || filter === '211') {
+                    renderLabs(labsDatabase.filter(lab => lab.type.includes(filter)));
+                } else if (filter === 'cas') {
+                    renderLabs(labsDatabase.filter(lab => lab.type.includes('中科院')));
+                } else if (filter === 'key-lab') {
+                    renderLabs(labsDatabase.filter(lab => lab.level.includes('国家重点')));
+                } else {
+                    renderLabs(labsDatabase.filter(lab => 
+                        lab.tags.some(tag => tag.includes(filter === 'humanoid' ? '人形' : filter === 'medical' ? '医疗' : filter === 'industrial' ? '工业' : 'AI'))
+                    ));
+                }
+            });
+        });
+        
+        // 实时搜索
+        document.getElementById('mainSearch').addEventListener('input', performSearch);
+        
+        // 更新结果计数
+        function updateResultsCount(count) {
+            document.getElementById('resultsCount').textContent = count;
+        }
+        
+        // 按地区筛选
+        function filterByRegion(region) {
+            const filtered = labsDatabase.filter(lab => lab.region === region);
+            renderLabs(filtered);
+            switchView('list');
+        }
+        
+        // 页面加载时初始化
+        window.onload = function() {
+            renderLabs(labsDatabase);
+            renderRegionsMap();
+        };
+    </script>
+</body>
+</html>
